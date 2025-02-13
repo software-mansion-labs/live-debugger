@@ -150,7 +150,9 @@ defmodule LiveDebugger.LiveViews.TracesLive do
   @impl true
   def handle_info({:node_changed, node_id}, socket) do
     socket
+    |> disable_tracing()
     |> assign(node_id: node_id)
+    |> enable_tracing()
     |> assign_async_existing_traces()
     |> noreply()
   end

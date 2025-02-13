@@ -37,6 +37,8 @@ defmodule LiveDebugger.GenServers.CallbackTracer do
 
   @impl true
   def handle_continue(:setup_tracing, state) do
+    # TODO check with Node.alive?()
+    Process.sleep(500)
     :dbg.tracer(:process, {&trace_handler/2, 0})
     :dbg.p(:all, :c)
 
@@ -134,8 +136,7 @@ defmodule LiveDebugger.GenServers.CallbackTracer do
       {:error, err}
   end
 
-  defp do_publish(%{module: module} = trace)
-       when module in [Phoenix.LiveView.Channel, Phoenix.LiveView.Diff] do
+  defp do_publish(%{module: Phoenix.LiveView.Diff} = trace) do
     socket_id = trace.socket_id
 
     PubSub.broadcast!(LiveDebugger.PubSub, "#{socket_id}/*/tree_updated", {:new_trace, trace})

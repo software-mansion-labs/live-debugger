@@ -45,6 +45,12 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
     |> ok()
   end
 
+  def update(%{show_sidebar?: true}, socket) do
+    socket
+    |> assign(:hidden?, false)
+    |> ok()
+  end
+
   def update(assigns, socket) do
     socket
     |> assign(%{
@@ -66,10 +72,8 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="w-max h-max flex">
-      <div class="hidden sm:flex flex-col w-60 min-h-max h-screen bg-primary gap-1 pt-4 p-2 pr-3">
-        <.sidebar_label socket={@socket} />
-        <.separate_bar />
+    <div class="w-max flex">
+      <div class="hidden sm:flex max-h-full flex-col w-64 gap-1">
         <.sidebar_content
           pid={@pid}
           socket_id={@socket_id}
@@ -79,25 +83,16 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
           myself={@myself}
         />
       </div>
-      <div class="flex sm:hidden flex-col gap-2 w-14 pt-4 p-1 h-screen bg-primary items-center justify-start">
-        <.link patch="/">
-          <.sidebar_icon_button icon="hero-home-solid" />
-        </.link>
-        <.sidebar_icon_button icon="hero-bars-3" phx-click="show_mobile_content" phx-target={@myself} />
-        <.sidebar_slide_over :if={not @hidden?} myself={@myself}>
-          <:header>
-            <.sidebar_label socket={@socket} />
-          </:header>
-          <.sidebar_content
-            pid={@pid}
-            socket_id={@socket_id}
-            tree={@tree}
-            max_opened_node_level={@max_opened_node_level}
-            node_id={@node_id}
-            myself={@myself}
-          />
-        </.sidebar_slide_over>
-      </div>
+      <.sidebar_slide_over :if={not @hidden?} myself={@myself}>
+        <.sidebar_content
+          pid={@pid}
+          socket_id={@socket_id}
+          tree={@tree}
+          max_opened_node_level={@max_opened_node_level}
+          node_id={@node_id}
+          myself={@myself}
+        />
+      </.sidebar_slide_over>
     </div>
     """
   end
@@ -107,12 +102,6 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
     socket
     |> push_patch(to: "#{socket.assigns.base_url}/#{node_id}")
     |> hide_sidebar_side_over()
-    |> noreply()
-  end
-
-  def handle_event("show_mobile_content", _params, socket) do
-    socket
-    |> show_sidebar_slide_over()
     |> noreply()
   end
 
@@ -128,8 +117,8 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
   defp sidebar_label(assigns) do
     ~H"""
     <.link patch="/" class="flex items-center gap-2">
-      <.icon class="text-white" name="hero-chevron-left-solid" />
-      <.h3 class="text-white">LiveDebugger</.h3>
+      <.icon class="text-primary" name="hero-chevron-left-solid" />
+      <.h3 class="text-primary">LiveDebugger</.h3>
     </.link>
     """
   end
@@ -143,7 +132,7 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
 
   defp sidebar_content(assigns) do
     ~H"""
-    <div class="flex flex-col gap-2 p-2">
+    <div class="flex flex-col gap-2 max-h-full h-max">
       <.basic_info pid={@pid} socket_id={@socket_id} />
       <.separate_bar />
       <.component_tree
@@ -157,28 +146,20 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
   end
 
   attr(:myself, :any, required: true)
-  slot(:header)
   slot(:inner_block)
 
   defp sidebar_slide_over(assigns) do
     ~H"""
-    <div class="absolute z-20 top-0 left-0 w-full h-screen bg-primary text-white p-2">
-      <div class="w-full flex justify-between p-2">
-        <%= render_slot(@header) %>
-        <.sidebar_icon_button
-          icon="hero-x-mark"
-          phx-click="close_mobile_content"
-          phx-target={@myself}
-        />
+    <div class="absolute z-20 top-0 left-0 bg-black/25 w-full h-full flex sm:hidden">
+      <div
+        class="w-64 h-full flex flex-col bg-white/100"
+        phx-click-away="close_mobile_content"
+        phx-target={@myself}
+      >
+        <%= render_slot(@inner_block) %>
       </div>
-      <.separate_bar />
-      <%= render_slot(@inner_block) %>
     </div>
     """
-  end
-
-  defp show_sidebar_slide_over(socket) do
-    assign(socket, :hidden?, false)
   end
 
   defp hide_sidebar_side_over(socket) do
@@ -190,15 +171,20 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
 
   defp basic_info(assigns) do
     ~H"""
-    <.card class="p-4 flex flex-col gap-1 bg-gray-200 text-black">
-      <%= for {text, value} <- [
-        {"Monitored socket:", @socket_id},
-        {"Debugged PID:", Parsers.pid_to_string(@pid)}
-      ] do %>
-        <div class="font-semibold text-primary"><%= text %></div>
-        <div><%= value %></div>
-      <% end %>
-    </.card>
+    <div class="w-full p-4 shrink-0 flex flex-col gap-2 text-primary text-ssm">
+      <div
+        :for={
+          {text, value} <- [
+            {"Monitored socket:", @socket_id},
+            {"Debugged PID:", Parsers.pid_to_string(@pid)}
+          ]
+        }
+        class="w-full flex flex-col"
+      >
+        <span class="font-semibold"><%= text %></span>
+        <span class="font-normal"><%= value %></span>
+      </div>
+    </div>
     """
   end
 
@@ -211,7 +197,7 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
     ~H"""
     <.async_result :let={tree} assign={@tree}>
       <:loading>
-        <div class="w-full flex justify-center mt-5"><.spinner class="text-white" /></div>
+        <div class="w-full flex justify-center mt-5"><.spinner class="text-primary" /></div>
       </:loading>
       <:failed :let={_error}>
         <.alert variant="danger">Couldn't load a tree</.alert>
@@ -222,7 +208,6 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
         selected_node_id={@selected_node_id}
         tree_node={tree}
         event_target={@target}
-        class="bg-gray-200"
         max_opened_node_level={@max_opened_node_level.result}
       />
     </.async_result>
@@ -243,7 +228,7 @@ defmodule LiveDebugger.LiveComponents.Sidebar do
 
   defp separate_bar(assigns) do
     ~H"""
-    <div class="border-b h-0 border-white my-4"></div>
+    <div class="border-b h-0 border-primary-20"></div>
     """
   end
 

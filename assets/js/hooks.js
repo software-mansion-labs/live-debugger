@@ -89,4 +89,35 @@ Hooks.CollapsibleOpen = {
   },
 };
 
+Hooks.ColorTheme = {
+  mounted() {
+    if (
+      localStorage.getItem('color-theme') === 'dark' ||
+      (!('color-theme' in localStorage) &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark');
+      this.el.checked = true;
+      localStorage.setItem('color-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      this.el.checked = false;
+      localStorage.setItem('color-theme', 'light');
+    }
+
+    this.handleChange = () => {
+      document.documentElement.classList.toggle('dark');
+      if (localStorage.getItem('color-theme') === 'dark') {
+        localStorage.setItem('color-theme', 'light');
+      } else {
+        localStorage.setItem('color-theme', 'dark');
+      }
+    };
+    this.el.addEventListener('change', this.handleChange);
+  },
+  destroyed() {
+    this.el.removeEventListener('change', this.handleChange);
+  },
+};
+
 export default Hooks;

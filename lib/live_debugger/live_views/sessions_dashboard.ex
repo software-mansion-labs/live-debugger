@@ -21,7 +21,11 @@ defmodule LiveDebugger.LiveViews.SessionsDashboard do
   def render(assigns) do
     ~H"""
     <div class="w-full h-full flex flex-col items-center">
-      <.topbar return_link?={false} />
+      <.topbar return_link?={false}>
+        <div class="grow flex items-center justify-end">
+          <.switch_button class="mr-4" />
+        </div>
+      </.topbar>
       <div class="w-full h-full p-8 xl:w-2/3">
         <div class="flex gap-4 items-center justify-between">
           <.h1>Active LiveViews</.h1>

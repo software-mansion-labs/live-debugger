@@ -38,6 +38,7 @@ defmodule LiveDebugger.LiveViews.ChannelDashboard do
     <div class="w-screen h-screen flex flex-col">
       <.topbar return_link?={true}>
         <div class="grow flex items-center justify-end">
+          <.switch_button class="mr-4" />
           <.icon_button phx-click="open-sidebar" class="flex sm:hidden" icon="icon-menu-hamburger" />
         </div>
       </.topbar>
